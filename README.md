@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/pertcf.svg)](https://pypi.org/project/pertcf/)
 [![Python versions](https://img.shields.io/pypi/pyversions/pertcf.svg)](https://pypi.org/project/pertcf/)
-[![CI](https://github.com/b-bayrak/PertCF-Explainer/actions/workflows/ci.yml/badge.svg)](https://github.com/b-bayrak/PertCF-Explainer/actions)
+[![CI](https://github.com/b-bayrak/PertCF/actions/workflows/ci.yml/badge.svg)](https://github.com/b-bayrak/PertCF/actions/runs/24771758700)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Paper](https://img.shields.io/badge/Paper-SGAI_2023-blue)](https://doi.org/10.1007/978-3-031-47994-6_13)
 
