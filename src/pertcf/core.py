@@ -4,12 +4,12 @@ core.py
 PertCFExplainer: the main class implementing the PertCF algorithm.
 
 This is a full rewrite of the original implementation that removes the
-myCBR dependency. The CBR (Case-Based Reasoning) retrieval layer is
-replaced with efficient NumPy/pandas weighted nearest-neighbour search,
-preserving exactly the same algorithmic behaviour as described in:
+myCBR dependency. The CBR retrieval layer is replaced with efficient
+NumPy/pandas weighted nearest-neighbour search, preserving exactly the
+same algorithmic behaviour as described in:
 
     Bayrak & Bach (2023). "PertCF: A Perturbation-Based Counterfactual
-    Generation Approach." SGAI AI-2023, LNAI 14381, pp. 174–187.
+    Generation Approach." SGAI AI-2023, LNAI 14381, pp. 174-187.
     https://doi.org/10.1007/978-3-031-47994-6_13
 
 Quick start
@@ -35,8 +35,7 @@ from __future__ import annotations
 
 import time
 import warnings
-from statistics import mean
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -69,7 +68,7 @@ class PertCFExplainer:
         Coefficient controlling the step-size termination threshold.
         thresh = dist(x, NUN) / coef. Default 5.
     shap_values : pd.DataFrame, optional
-        Pre-computed SHAP value DataFrame (n_classes × n_features).
+        Pre-computed SHAP value DataFrame (n_classes x n_features).
         If None, SHAP values are computed during ``fit()``.
     similarity_matrices : dict, optional
         Custom per-feature categorical similarity matrices.
@@ -114,16 +113,16 @@ class PertCFExplainer:
             str(c) for c in self.adapter.class_names
         ]
 
-        # Pre-computed SHAP values (set during fit or passed in)
         self._shap_weights: Optional[pd.DataFrame] = shap_values
         self.sim_fn: Optional[SHAPWeightedSimilarity] = None
 
-        # Per-class training data (populated during fit)
         self._casebases: Dict[str, pd.DataFrame] = {}
 
         self._is_fitted = False
 
+    # ------------------------------------------------------------------
     # Public API
+    # ------------------------------------------------------------------
 
     def fit(
         self,
@@ -144,10 +143,9 @@ class PertCFExplainer:
         Parameters
         ----------
         shap_sample_size : int
-            Max background samples for SHAP (KernelExplainer). Default 300.
+            Max background samples for SHAP. Default 300.
         shap_background_size : int, optional
-            Background dataset size passed to SHAP TreeExplainer (ignored
-            for KernelExplainer). Default None = full background.
+            Unused (kept for API compatibility).
         verbose : bool
             Print progress. Default True.
 
@@ -157,18 +155,16 @@ class PertCFExplainer:
         """
         if self._shap_weights is None:
             if verbose:
-                print("Computing SHAP values… (this may take a moment)")
+                print("Computing SHAP values... (this may take a moment)")
             self._shap_weights = self._compute_shap(shap_sample_size)
             if verbose:
-                print("✓ SHAP values computed.\n")
+                print("SHAP values computed.\n")
         else:
             if verbose:
-                print("✓ Using provided SHAP values.\n")
+                print("Using provided SHAP values.\n")
 
-        # Feature ranges for numeric normalisation
         self._feature_ranges = self._compute_ranges()
 
-        # Per-class casebases
         train_full = self.X_train.copy()
         train_full[self.label] = self.y_train
         for cls in self.class_names:
@@ -178,7 +174,6 @@ class PertCFExplainer:
                 .reset_index(drop=True)
             )
 
-        # Build similarity function
         self.sim_fn = SHAPWeightedSimilarity(
             feature_names=self.feature_names,
             categorical_features=self.categorical_features,
@@ -189,7 +184,7 @@ class PertCFExplainer:
 
         self._is_fitted = True
         if verbose:
-            print("✓ Explainer fitted and ready.\n")
+            print("Explainer fitted and ready.\n")
         return self
 
     def explain(
@@ -204,12 +199,11 @@ class PertCFExplainer:
         Parameters
         ----------
         instance : pd.Series
-            The instance to explain. Must include the label column
-            (accessible via self.label).
+            The instance to explain. Must include the label column.
         target_class : str, optional
             Desired counterfactual class. If None, the NUN's class is used.
         return_all_candidates : bool
-            If True, return a list of all candidate CFs generated. Default False.
+            If True, return a list of all candidate CFs generated.
 
         Returns
         -------
@@ -222,7 +216,6 @@ class PertCFExplainer:
         q_class = str(instance[self.label])
         query = instance.drop(labels=[self.label])
 
-        # Find Nearest Unlike Neighbour
         nun_result = self._find_nun(query, q_class, excluded_classes=[q_class])
         if nun_result is None:
             warnings.warn("Could not find a NUN for this instance.")
@@ -232,7 +225,6 @@ class PertCFExplainer:
 
         if target_class is not None:
             nun_class = str(target_class)
-            # Override NUN with NUN from target class only
             nun_result2 = self._find_nun(query, q_class, target_class=nun_class)
             if nun_result2 is not None:
                 nun_features, _ = nun_result2
@@ -242,7 +234,6 @@ class PertCFExplainer:
         self._exp_class = nun_class
         self._used_classes = {q_class, nun_class}
         self._candidate_list: List[pd.Series] = []
-        # Store NUN as ultimate fallback (mirrors original implementation)
         self._nun_fallback = nun_features.copy()
         self._nun_fallback_class = nun_class
 
@@ -259,7 +250,6 @@ class PertCFExplainer:
             return None
 
         result = cf.copy()
-        # _fallback may have already stamped the label; only set if missing
         if self.label not in result.index:
             result[self.label] = self._exp_class
 
@@ -284,14 +274,13 @@ class PertCFExplainer:
 
         Returns
         -------
-        pd.DataFrame of CFs aligned with X. Rows where CF generation
-        failed are filled with NaN.
+        pd.DataFrame of CFs aligned with X.
         """
         self._check_fitted()
         results = []
         for i, (_, row) in enumerate(X.iterrows()):
             if verbose and (i % 10 == 0):
-                print(f"  Explaining instance {i}/{len(X)}…")
+                print(f"  Explaining instance {i}/{len(X)}...")
             cf = self.explain(row)
             results.append(cf)
 
@@ -322,7 +311,9 @@ class PertCFExplainer:
         nun_features, _ = result
         return nun_features
 
+    # ------------------------------------------------------------------
     # Core algorithm (internal)
+    # ------------------------------------------------------------------
 
     def _generate_cf(
         self,
@@ -334,26 +325,18 @@ class PertCFExplainer:
         iteration: int,
     ) -> Optional[pd.Series]:
         """
-        Recursive perturbation loop.  Mirrors Algorithm 1 from the paper.
-
-        p1 = source (starts as original query x)
-        p2 = target (starts as NUN)
+        Recursive perturbation loop. Mirrors Algorithm 1 from the paper.
         """
         if iteration > self.num_iter:
-            # Iteration limit reached
             if self._candidate_list:
                 return self._candidate_list[-1]
-            # Try with next best NUN
             return self._fallback(p1, p1_class)
 
-        # -- Generate candidate by perturbing p1 toward p2 --
         candidate = self._perturb(p1, p2, self._exp_class)
 
-        # -- Predict class of candidate --
         cnd_arr = pd.DataFrame([candidate])
         cnd_class = str(self.adapter.predict(cnd_arr)[0])
 
-        # -- If candidate belongs to expected class --
         if cnd_class == self._exp_class:
             self._candidate_list.append(candidate.copy())
 
@@ -361,19 +344,21 @@ class PertCFExplainer:
                 prev = self._candidate_list[-2]
                 step = self.sim_fn.distance(prev, candidate, self._exp_class)
                 if step <= thresh:
-                    # Step size below threshold → converged
                     return candidate
 
-            # Not yet converged → move candidate toward p1 (refine)
-            return self._generate_cf(candidate, cnd_class, p1, p1_class, thresh, iteration + 1)
+            return self._generate_cf(
+                candidate, cnd_class, p1, p1_class, thresh, iteration + 1
+            )
 
         elif cnd_class != p1_class:
-            # Candidate landed in a third class → follow it
-            return self._generate_cf(candidate, cnd_class, p1, p1_class, thresh, iteration + 1)
+            return self._generate_cf(
+                candidate, cnd_class, p1, p1_class, thresh, iteration + 1
+            )
 
         else:
-            # Candidate is still in source class → push harder toward target
-            return self._generate_cf(candidate, cnd_class, p2, p2_class, thresh, iteration + 1)
+            return self._generate_cf(
+                candidate, cnd_class, p2, p2_class, thresh, iteration + 1
+            )
 
     def _perturb(
         self,
@@ -386,10 +371,9 @@ class PertCFExplainer:
 
         Numeric:    p_f = s_f + shap_target_f * (t_f - s_f)
         Categorical:p_f = t_f  if sim(s_f, t_f) < alpha  else  s_f
-                    (alpha = 0.5 by default)
         """
         weights = self._shap_weights.loc[str(target_class), self.feature_names]
-        alpha = 0.5  # categorical switch threshold
+        alpha = 0.5
 
         result = {}
         for feat in self.feature_names:
@@ -432,7 +416,6 @@ class PertCFExplainer:
             if cb is None or len(cb) == 0:
                 continue
 
-            # Compute similarity of query to all cases in this class
             sims = cb.apply(
                 lambda row: self.sim_fn.similarity(query, row, cls), axis=1
             )
@@ -454,17 +437,14 @@ class PertCFExplainer:
         candidate_class: str,
     ) -> Optional[pd.Series]:
         """
-        When CF generation fails (no candidates found within num_iter
-        iterations), try again from the next best NUN of the last candidate.
-        If no further NUN exists (e.g. binary classification, all classes
-        tried), return the original NUN as a last resort.
+        When CF generation fails, try again from the next best NUN.
+        If all classes are exhausted, return the original NUN.
         """
         next_nun = self._find_nun(
             candidate, candidate_class,
             excluded_classes=list(self._used_classes),
         )
         if next_nun is None:
-            # Ultimate fallback: return the original NUN with its class label
             result = self._nun_fallback.copy()
             result[self.label] = self._nun_fallback_class
             return result
@@ -474,21 +454,21 @@ class PertCFExplainer:
         self._exp_class = nun_class
         thresh = self.sim_fn.distance(candidate, nun_features, nun_class) / self.coef
 
-        return self._generate_cf(candidate, candidate_class, nun_features, nun_class, thresh, 0)
+        return self._generate_cf(
+            candidate, candidate_class, nun_features, nun_class, thresh, 0
+        )
 
+    # ------------------------------------------------------------------
     # SHAP computation
-    def _compute_shap(self, sample_size: int = 100) -> pd.DataFrame:
+    # ------------------------------------------------------------------
+
+    def _compute_shap(self, sample_size: int = 300) -> pd.DataFrame:
         """
         Compute per-class mean |SHAP| values, normalised to sum to 1.
-
-        Tries TreeExplainer first (fast, exact for tree models).
-        Falls back to KernelExplainer (model-agnostic, slower).
         """
         import shap
 
         background = self.X_train.copy()
-
-        # Encode categoricals for SHAP
         bg_encoded = background.copy()
         for col in self.categorical_features:
             bg_encoded[col] = bg_encoded[col].astype("category").cat.codes
@@ -496,28 +476,23 @@ class PertCFExplainer:
         if len(bg_encoded) > sample_size:
             bg_encoded = bg_encoded.sample(sample_size, random_state=42)
 
-        # Try TreeExplainer (fast)
         try:
             shap_explainer = shap.TreeExplainer(
-                self.adapter._model,  # works for sklearn tree models
+                self.adapter._model,
                 data=bg_encoded,
                 feature_perturbation="interventional",
             )
             shap_vals = shap_explainer.shap_values(bg_encoded)
         except Exception:
-            # Fallback: KernelExplainer
             predict_fn = lambda x: self.adapter.predict_proba(  # noqa: E731
                 pd.DataFrame(x, columns=self.feature_names)
             )
             shap_explainer = shap.KernelExplainer(predict_fn, bg_encoded)
             shap_vals = shap_explainer.shap_values(bg_encoded)
 
-        # shap_vals: list of arrays (one per class), each shape (n_samples, n_features)
         if not isinstance(shap_vals, list):
-            # Binary classification: single array → wrap in list
             shap_vals = [shap_vals, -shap_vals]
 
-        # Mean absolute SHAP per class
         mean_abs = [np.mean(np.abs(sv), axis=0) for sv in shap_vals]
         shap_df = pd.DataFrame(
             mean_abs,
@@ -525,13 +500,15 @@ class PertCFExplainer:
             columns=self.feature_names,
         )
 
-        # Normalise rows to sum to 1
         row_sums = shap_df.sum(axis=1).replace(0, 1)
         shap_df = shap_df.div(row_sums, axis=0)
 
         return shap_df
 
+    # ------------------------------------------------------------------
     # Helpers
+    # ------------------------------------------------------------------
+
     def _compute_ranges(self) -> Dict[str, float]:
         ranges = {}
         for col in self.feature_names:
@@ -548,7 +525,10 @@ class PertCFExplainer:
                 "Explainer not fitted. Call explainer.fit() first."
             )
 
-    # Convenience: run the benchmark experiment from the paper
+    # ------------------------------------------------------------------
+    # Benchmark
+    # ------------------------------------------------------------------
+
     def benchmark(
         self,
         X_test: pd.DataFrame,
@@ -558,7 +538,7 @@ class PertCFExplainer:
     ) -> dict:
         """
         Replicate the paper's benchmark: generate CFs for the test set and
-        compute dissimilarity, sparsity, instability, and runtime.
+        compute dissimilarity, sparsity, and runtime.
 
         Parameters
         ----------
@@ -573,7 +553,7 @@ class PertCFExplainer:
 
         Returns
         -------
-        dict: {dissimilarity, sparsity, instability, runtime_mean}
+        dict: {dissimilarity, sparsity, runtime_mean, n_successful, n_total}
         """
         self._check_fitted()
         old_coef = self.coef
@@ -584,13 +564,12 @@ class PertCFExplainer:
             X_test = X_test.iloc[:n]
 
         cf_list = []
-        diss, spar, inst, times = [], [], [], []
+        diss, spar, times = [], [], []
 
         for i, (_, row) in enumerate(X_test.iterrows()):
             if verbose and (i % 10 == 0):
                 print(f"  [{i}/{len(X_test)}]", end="\r")
 
-            q_class = str(row[self.label])
             query = row.drop(labels=[self.label])
 
             start = time.time()
@@ -611,8 +590,6 @@ class PertCFExplainer:
             )
             times.append(elapsed)
 
-        # Instability requires re-generating CFs for perturbed instances
-        # (expensive, done separately)
         result = {
             "dissimilarity": float(np.mean(diss)) if diss else float("nan"),
             "sparsity": float(np.mean(spar)) if spar else float("nan"),

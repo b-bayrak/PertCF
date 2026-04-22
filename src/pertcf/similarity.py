@@ -3,6 +3,9 @@ similarity.py
 -------------
 SHAP-weighted similarity and distance functions.
 
+This module replaces the myCBR REST API dependency from the original
+implementation. All computations are done in pure NumPy/pandas.
+
 Design
 ------
 For numeric features:
@@ -24,9 +27,10 @@ Distance:
 
 from __future__ import annotations
 
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional
 
 
 class SHAPWeightedSimilarity:
@@ -65,7 +69,9 @@ class SHAPWeightedSimilarity:
         self.feature_ranges = feature_ranges
         self.similarity_matrices = similarity_matrices or {}
 
+    # ------------------------------------------------------------------
     # Per-feature similarity
+    # ------------------------------------------------------------------
 
     def feature_similarity(
         self, feature: str, val_a, val_b, class_label=None
@@ -107,7 +113,9 @@ class SHAPWeightedSimilarity:
             return float(mat[rev_key])
         return 1.0 if str(val_a) == str(val_b) else 0.0
 
+    # ------------------------------------------------------------------
     # Weighted similarity / distance between two instances
+    # ------------------------------------------------------------------
 
     def similarity(
         self,
@@ -131,7 +139,6 @@ class SHAPWeightedSimilarity:
         weights = self.shap_weights.loc[str(class_label), self.feature_names]
         w_total = weights.sum()
         if w_total == 0:
-            # fallback: uniform weights
             weights = pd.Series(
                 np.ones(len(self.feature_names)) / len(self.feature_names),
                 index=self.feature_names,
@@ -150,7 +157,9 @@ class SHAPWeightedSimilarity:
         """Distance = 1 - similarity."""
         return 1.0 - self.similarity(x, y, class_label)
 
+    # ------------------------------------------------------------------
     # Per-feature similarity breakdown (for transparency / metrics)
+    # ------------------------------------------------------------------
 
     def feature_similarities(
         self, x: pd.Series, y: pd.Series

@@ -60,19 +60,23 @@ docs = [
 ]
 
 [project.urls]
-Homepage      = "https://github.com/b-bayrak/PertCF-Explainer"
-Documentation = "https://b-bayrak.github.io/PertCF-Explainer"
-Repository    = "https://github.com/b-bayrak/PertCF-Explainer"
-Issues        = "https://github.com/b-bayrak/PertCF-Explainer/issues"
+Homepage      = "https://github.com/b-bayrak/PertCF"
+Documentation = "https://b-bayrak.github.io/PertCF"
+Repository    = "https://github.com/b-bayrak/PertCF"
+Issues        = "https://github.com/b-bayrak/PertCF/issues"
 Paper         = "https://doi.org/10.1007/978-3-031-47994-6_13"
-Changelog     = "https://github.com/b-bayrak/PertCF-Explainer/blob/main/CHANGELOG.md"
+Changelog     = "https://github.com/b-bayrak/PertCF/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pertcf"]
 
 [tool.ruff]
-line-length = 88
-select = ["E", "F", "I", "UP"]
+line-length = 100
+
+[tool.ruff.lint]
+# E = pycodestyle errors, F = pyflakes, I = isort
+# UP (pyupgrade) intentionally excluded — we support Python 3.9
+select = ["E", "F", "I"]
 
 [tool.mypy]
 python_version = "3.9"

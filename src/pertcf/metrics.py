@@ -7,19 +7,16 @@ Metrics match those reported in the PertCF paper (SGAI 2023):
 - dissimilarity  (proximity, lower is better)
 - sparsity       (fraction of features changed, lower = fewer changes)
 - instability    (stability under input perturbation, lower is better)
-
-All metrics accept plain pd.Series / np.ndarray and an optional
-SHAPWeightedSimilarity object for distance calculation.
 """
 
 from __future__ import annotations
 
+from typing import List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union
 
 from .similarity import SHAPWeightedSimilarity
-
 
 # ---------------------------------------------------------------------------
 # Dissimilarity (proximity)
@@ -68,24 +65,19 @@ def mean_dissimilarity(
     return float(np.mean(vals))
 
 
+# ---------------------------------------------------------------------------
 # Sparsity
+# ---------------------------------------------------------------------------
+
 def sparsity(
     query: pd.Series,
     counterfactual: pd.Series,
     feature_names: Optional[List[str]] = None,
 ) -> float:
     """
-    Fraction of features that remain **unchanged** between query and CF.
+    Fraction of features that changed between query and CF.
 
-    sparsity = (# unchanged features) / (total features)
-
-    Higher sparsity → fewer features changed → more actionable CF.
-    The paper computes this as L0 norm / m (fraction *changed*);
-    we follow the same convention (lower fraction changed = lower sparsity
-    score, which equals a higher proportion unchanged).
-
-    To match the paper's Table 2 numbers, we return the fraction of
-    features that **changed** (i.e., 1 - fraction_unchanged).
+    sparsity = (# changed features) / (total features)
 
     Parameters
     ----------
@@ -120,22 +112,18 @@ def mean_sparsity(
     return float(np.mean(vals))
 
 
+# ---------------------------------------------------------------------------
 # Instability
+# ---------------------------------------------------------------------------
+
 def instability(
     query: pd.Series,
     counterfactual: pd.Series,
-    explainer,  # PertCFExplainer instance
+    explainer,
     perturbation: float = 0.01,
 ) -> float:
     """
     Stability of the generated CF under small input perturbation.
-
-    Procedure (following the paper):
-    1. Create a slightly perturbed version y of the query x.
-    2. Generate a CF y' for y using the same explainer.
-    3. Return dist(x', y').
-
-    Lower instability → more stable explainer.
 
     Parameters
     ----------
@@ -152,14 +140,11 @@ def instability(
     -------
     float
     """
-    # Build perturbed query
     perturbed = query.copy().astype(object)
     for feat in explainer.feature_names:
         if feat not in explainer.categorical_features:
             perturbed[feat] = float(query[feat]) * (1 + perturbation)
-        # Categorical features are left unchanged for small perturbation
 
-    # Predict class of perturbed instance
     p_class = explainer.adapter.predict(
         pd.DataFrame([perturbed[explainer.feature_names]])
     )[0]
@@ -167,16 +152,15 @@ def instability(
     perturbed_with_label = perturbed.copy()
     perturbed_with_label[explainer.label] = p_class
 
-    # Generate CF for perturbed instance
     cf_perturbed = explainer.explain(perturbed_with_label)
     if cf_perturbed is None:
         return float("nan")
 
-    # Distance between original CF and perturbed CF
     cf_features = counterfactual[explainer.feature_names]
     cf_p_features = cf_perturbed[explainer.feature_names]
+    class_name = str(explainer.adapter.class_names[0])
 
-    return explainer.sim_fn.distance(cf_features, cf_p_features, str(explainer.adapter.class_names[0]))
+    return explainer.sim_fn.distance(cf_features, cf_p_features, class_name)
 
 
 def mean_instability(
@@ -194,7 +178,10 @@ def mean_instability(
     return float(np.mean(vals)) if vals else float("nan")
 
 
+# ---------------------------------------------------------------------------
 # Convenience: compute all metrics at once
+# ---------------------------------------------------------------------------
+
 def evaluate(
     queries: List[pd.Series],
     counterfactuals: List[pd.Series],
@@ -211,7 +198,6 @@ def evaluate(
     dict with keys: dissimilarity, sparsity, instability
     """
     if class_labels is None:
-        # Use the CF's class label for the distance weight
         class_labels = [
             cf.get(explainer.label, explainer.adapter.class_names[0])
             for cf in counterfactuals

@@ -1,7 +1,7 @@
 """
 adapters.py
 -----------
-Thin wrappers that give PertCF a unified "predict(X) -> array[int/str]"
+Thin wrappers that give PertCF a unified ``predict(X) -> array[int/str]``
 interface regardless of whether the underlying model is a scikit-learn
 estimator, a PyTorch nn.Module, a Keras/TF model, or a plain callable.
 
@@ -16,12 +16,15 @@ Usage
 
 from __future__ import annotations
 
+from typing import Callable, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Callable, Optional, Union
 
-
+# ---------------------------------------------------------------------------
 # Public helper
+# ---------------------------------------------------------------------------
+
 def wrap_model(
     model,
     class_names: Optional[list] = None,
@@ -60,7 +63,6 @@ def wrap_model(
 
     # PyTorch
     try:
-        import torch  # noqa: F401
         import torch.nn as nn
         if isinstance(model, nn.Module):
             if class_names is None:
@@ -97,7 +99,10 @@ def wrap_model(
     )
 
 
+# ---------------------------------------------------------------------------
 # Base adapter
+# ---------------------------------------------------------------------------
+
 class ModelAdapter:
     """Abstract base for model adapters."""
 
@@ -113,7 +118,6 @@ class ModelAdapter:
         """Return class probability array of shape (n_samples, n_classes)."""
         raise NotImplementedError
 
-    # Helpers shared by all adapters
     @staticmethod
     def _to_numpy(X) -> np.ndarray:
         if isinstance(X, pd.DataFrame):
@@ -123,11 +127,13 @@ class ModelAdapter:
         return np.asarray(X)
 
 
+# ---------------------------------------------------------------------------
 # scikit-learn adapter
+# ---------------------------------------------------------------------------
+
 class _SklearnAdapter(ModelAdapter):
     def __init__(self, model):
         self._model = model
-        # Store feature names if the model was fitted with named features
         self._feature_names = getattr(model, "feature_names_in_", None)
 
     @property
@@ -152,7 +158,10 @@ class _SklearnAdapter(ModelAdapter):
         return self._model.predict_proba(self._to_frame(X))
 
 
+# ---------------------------------------------------------------------------
 # PyTorch adapter
+# ---------------------------------------------------------------------------
+
 class _TorchAdapter(ModelAdapter):
     def __init__(self, model, class_names: list):
         self._model = model
@@ -178,7 +187,10 @@ class _TorchAdapter(ModelAdapter):
         return np.array([self._class_names[i] for i in indices])
 
 
+# ---------------------------------------------------------------------------
 # Keras / TensorFlow adapter
+# ---------------------------------------------------------------------------
+
 class _KerasAdapter(ModelAdapter):
     def __init__(self, model, class_names: list):
         self._model = model
@@ -198,7 +210,10 @@ class _KerasAdapter(ModelAdapter):
         return np.array([self._class_names[i] for i in indices])
 
 
+# ---------------------------------------------------------------------------
 # Callable adapter
+# ---------------------------------------------------------------------------
+
 class _CallableAdapter(ModelAdapter):
     def __init__(self, model, class_names, predict_fn, predict_proba_fn):
         self._model = model

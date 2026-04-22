@@ -6,7 +6,7 @@ counterfactual explanation method that leverages SHAP feature attributions.
 
 Based on:
     Bayrak & Bach (2023). "PertCF: A Perturbation-Based Counterfactual
-    Generation Approach." SGAI AI-2023, LNAI 14381, pp. 174–187.
+    Generation Approach." SGAI AI-2023, LNAI 14381, pp. 174-187.
     https://doi.org/10.1007/978-3-031-47994-6_13
 
 Quick start
@@ -26,10 +26,10 @@ Quick start
     cf = explainer.explain(test_instance)
 """
 
+from . import metrics
+from .adapters import ModelAdapter, wrap_model
 from .core import PertCFExplainer
 from .similarity import SHAPWeightedSimilarity
-from .adapters import wrap_model, ModelAdapter
-from . import metrics
 
 __version__ = "1.0.0"
 __author__ = "Betül Bayrak"

@@ -9,12 +9,12 @@ Run with:  pytest tests/ -v
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.datasets import make_classification
+from sklearn.ensemble import GradientBoostingClassifier
 
-
-
+# ---------------------------------------------------------------------------
 # Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="module")
 def synthetic_data():
@@ -41,7 +41,7 @@ def fitted_explainer(synthetic_data):
         model=clf,
         X_train=X_df,
         y_train=y_series,
-        categorical_features=[],   # all numeric for simplicity
+        categorical_features=[],
         label="label",
         num_iter=5,
         coef=5.0,
@@ -50,7 +50,9 @@ def fitted_explainer(synthetic_data):
     return explainer, X_df, y_series, clf
 
 
+# ---------------------------------------------------------------------------
 # Similarity tests
+# ---------------------------------------------------------------------------
 
 class TestSHAPWeightedSimilarity:
     def test_identical_instances(self, fitted_explainer):
@@ -68,7 +70,6 @@ class TestSHAPWeightedSimilarity:
 
     def test_categorical_sim_exact_match(self):
         from pertcf.similarity import SHAPWeightedSimilarity
-        import pandas as pd
 
         weights = pd.DataFrame([[0.5, 0.5]], index=["A"], columns=["x", "y"])
         sim_fn = SHAPWeightedSimilarity(
@@ -77,13 +78,13 @@ class TestSHAPWeightedSimilarity:
             shap_weights=weights,
             feature_ranges={"x": 1.0, "y": 1.0},
         )
-        s1 = pd.Series({"x": "cat1", "y": 0.0})
-        # s2 = pd.Series({"x": "cat1", "y": 0.0})
         assert sim_fn.feature_similarity("x", "cat1", "cat1") == pytest.approx(1.0)
         assert sim_fn.feature_similarity("x", "cat1", "cat2") == pytest.approx(0.0)
 
 
+# ---------------------------------------------------------------------------
 # Core explainer tests
+# ---------------------------------------------------------------------------
 
 class TestPertCFExplainer:
     def test_fit_sets_ready(self, fitted_explainer):
@@ -128,21 +129,26 @@ class TestPertCFExplainer:
 
     def test_not_fitted_raises(self):
         import pandas as pd
+        from sklearn.dummy import DummyClassifier
+
         from pertcf import PertCFExplainer
+
         X = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
         y = pd.Series(["0", "1"])
-        from sklearn.dummy import DummyClassifier
         clf = DummyClassifier().fit(X, y)
         explainer = PertCFExplainer(clf, X, y, [], label="label")
         with pytest.raises(RuntimeError, match="not fitted"):
             explainer.explain(X.iloc[0])
 
 
+# ---------------------------------------------------------------------------
 # Adapter tests
+# ---------------------------------------------------------------------------
 
 class TestAdapters:
     def test_sklearn_adapter(self, synthetic_data):
         from pertcf.adapters import wrap_model
+
         X_df, y_series, _ = synthetic_data
         clf = GradientBoostingClassifier(n_estimators=10, random_state=42)
         clf.fit(X_df, y_series)
@@ -154,12 +160,11 @@ class TestAdapters:
 
     def test_callable_adapter(self, synthetic_data):
         from pertcf.adapters import wrap_model
+
         X_df, y_series, feature_names = synthetic_data
         clf = GradientBoostingClassifier(n_estimators=10, random_state=42)
         clf.fit(X_df, y_series)
 
-        # Callable adapter: user is responsible for encoding; we use a
-        # DataFrame-aware lambda to match real usage patterns.
         def _pred(x):
             df = pd.DataFrame(x, columns=feature_names)
             return clf.predict(df)
@@ -178,22 +183,27 @@ class TestAdapters:
         assert len(preds) == len(X_df)
 
 
+# ---------------------------------------------------------------------------
 # Metrics tests
+# ---------------------------------------------------------------------------
 
 class TestMetrics:
     def test_sparsity_identical(self):
         from pertcf.metrics import sparsity
+
         s = pd.Series({"a": 1, "b": 2, "c": 3})
         assert sparsity(s, s) == pytest.approx(0.0)
 
     def test_sparsity_all_different(self):
         from pertcf.metrics import sparsity
+
         s1 = pd.Series({"a": 1, "b": 2})
         s2 = pd.Series({"a": 9, "b": 9})
         assert sparsity(s1, s2) == pytest.approx(1.0)
 
     def test_dissimilarity_identical(self, fitted_explainer):
         from pertcf.metrics import dissimilarity
+
         explainer, X_df, *_ = fitted_explainer
         row = X_df.iloc[0]
         d = dissimilarity(row, row, explainer.sim_fn, "0")
