@@ -78,7 +78,7 @@ class TestSHAPWeightedSimilarity:
             feature_ranges={"x": 1.0, "y": 1.0},
         )
         s1 = pd.Series({"x": "cat1", "y": 0.0})
-        s2 = pd.Series({"x": "cat1", "y": 0.0})
+        # s2 = pd.Series({"x": "cat1", "y": 0.0})
         assert sim_fn.feature_similarity("x", "cat1", "cat1") == pytest.approx(1.0)
         assert sim_fn.feature_similarity("x", "cat1", "cat2") == pytest.approx(0.0)
 
@@ -127,8 +127,8 @@ class TestPertCFExplainer:
             assert str(cf["label"]) != str(q_class)
 
     def test_not_fitted_raises(self):
-        from pertcf import PertCFExplainer
         import pandas as pd
+        from pertcf import PertCFExplainer
         X = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
         y = pd.Series(["0", "1"])
         from sklearn.dummy import DummyClassifier
