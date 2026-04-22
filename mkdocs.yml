@@ -1,0 +1,79 @@
+site_name: PertCF
+site_description: >-
+  Perturbation-based counterfactual explanations with SHAP-weighted
+  feature attribution. No external server required.
+site_url: https://b-bayrak.github.io/PertCF-Explainer
+repo_url: https://github.com/b-bayrak/PertCF-Explainer
+repo_name: b-bayrak/PertCF-Explainer
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            show_signature_annotations: true
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: install.md
+    - Quickstart: quickstart.md
+  - Concepts:
+    - How PertCF Works: concepts.md
+    - Parameters: parameters.md
+  - API Reference:
+    - PertCFExplainer: api/explainer.md
+    - Similarity: api/similarity.md
+    - Metrics: api/metrics.md
+    - Adapters: api/adapters.md
+  - Examples:
+    - German Credit: examples/german_credit.md
+    - User Knowledge Modeling: examples/knowledge.md
+    - Custom Similarity: examples/custom_similarity.md
+  - Citing: citing.md
+  - Changelog: changelog.md

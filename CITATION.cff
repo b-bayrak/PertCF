@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the paper and the software."
+title: "pertcf: A Python Package for Perturbation-Based Counterfactual Explanations"
+version: 1.0.0
+date-released: "2024-01-01"
+license: MIT
+repository-code: "https://github.com/b-bayrak/PertCF-Explainer"
+url: "https://b-bayrak.github.io/PertCF-Explainer"
+
+authors:
+  - family-names: Bayrak
+    given-names: Betül
+    affiliation: "Norwegian University of Science and Technology (NTNU)"
+    email: betul.bayrak@ntnu.no
+    orcid: "https://orcid.org/0000-0000-0000-0000"  # replace with your ORCID
+
+preferred-citation:
+  type: conference-paper
+  title: "PertCF: A Perturbation-Based Counterfactual Generation Approach"
+  authors:
+    - family-names: Bayrak
+      given-names: Betül
+      affiliation: "Norwegian University of Science and Technology (NTNU)"
+    - family-names: Bach
+      given-names: Kerstin
+      affiliation: "Norwegian University of Science and Technology (NTNU)"
+  collection-title: "Artificial Intelligence XXXVIII"
+  collection-type: proceedings
+  publisher:
+    name: Springer
+    city: Cham
+  year: 2023
+  volume: 14381
+  start: 174
+  end: 187
+  doi: "10.1007/978-3-031-47994-6_13"
+  series: "Lecture Notes in Computer Science"
+  conference:
+    name: "SGAI AI-2023"
+
+keywords:
+  - counterfactual-explanations
+  - explainable-ai
+  - xai
+  - interpretability
+  - shap
+  - perturbation
+  - machine-learning
+  - tabular-data
