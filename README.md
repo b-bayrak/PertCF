@@ -244,6 +244,6 @@ If you use PertCF in your research, please cite:
 
 ## License
 
-MIT © Betül Bayrak, NTNU
+MIT © Betül Bayrak
 
 This work was supported by the Research Council of Norway through the EXAIGON project (ID 304843).
